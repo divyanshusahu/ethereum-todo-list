@@ -1,7 +1,7 @@
 pragma solidity >=0.5.0;
 
 contract TodoList {
-  uint16 taskCount = 0;
+  uint16 public taskCount = 0;
 
   struct Task {
     uint16 id;
