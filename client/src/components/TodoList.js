@@ -14,6 +14,7 @@ import {
   UnorderedList,
   ListItem,
   Switch,
+  Dialog,
   toaster
 } from "evergreen-ui";
 
@@ -25,6 +26,11 @@ function TodoList() {
   const [taskCount, setTaskCount] = React.useState(null);
   const [newTaskInput, setNewTaskInput] = React.useState("");
   const [todoListTasks, setTodoListTasks] = React.useState([]);
+  const [showEditContentDialog, setShowEditContentDialog] = React.useState(
+    false
+  );
+  const [editTaskId, setEditTaskId] = React.useState(null);
+  const [editTaskInput, setEditTaskInput] = React.useState("");
 
   let web3;
 
@@ -60,7 +66,7 @@ function TodoList() {
     const userAccount = await web3.eth.getAccounts();
     setAccount(userAccount[0]);
     const todoListContractAddress =
-      "0xc4B1E15e241472EDB62E34237fCB41c4444e9A15"; // Paste your contract address here
+      "0x2dCEDbaf916373B0e75A6f3aC7116f28803c17b1"; // Paste your contract address here
     let tlc = new web3.eth.Contract(todoListABI.abi, todoListContractAddress);
     setTodoListConnection(tlc);
 
@@ -178,6 +184,27 @@ function TodoList() {
       });
   };
 
+  const editDialog = id => {
+    setShowEditContentDialog(true);
+    setEditTaskId(id);
+  };
+
+  const editTaskContent = () => {
+    //toaster.notify("Updating task content", { id: "updateTaskContentToaster" });
+    return todoListConnection.methods
+      .editTaskContent(editTaskId, editTaskInput)
+      .send({ from: account, gas: 300000 })
+      .on("receipt", receipt => {
+        toaster.success("Task content updated.");
+        let temp = todoListTasks;
+        temp[editTaskId - 1]["content"] = editTaskInput;
+        setTodoListTasks([...temp]);
+      })
+      .on("error", error => {
+        toaster.danger("Task content updation failed.");
+      });
+  };
+
   return (
     <Pane
       display="flex"
@@ -236,7 +263,16 @@ function TodoList() {
                       icon={t.complete ? "tick-circle" : "ban-circle"}
                       iconColor={t.complete ? "success" : "danger"}
                     >
-                      {t.content}
+                      <span>{t.content}</span>
+                      <Button
+                        appearance="minimal"
+                        height={20}
+                        intent="warning"
+                        style={{ float: "right" }}
+                        onClick={() => editDialog(t.id)}
+                      >
+                        Edit
+                      </Button>
                       <Switch
                         checked={t.complete}
                         style={{ float: "right" }}
@@ -248,6 +284,27 @@ function TodoList() {
           </div>
         </div>
       </Card>
+      <Dialog
+        isShown={showEditContentDialog}
+        onCloseComplete={() => setShowEditContentDialog(false)}
+        onConfirm={close => {
+          editTaskContent();
+          close();
+        }}
+        title="Edit Task"
+      >
+        <Paragraph>
+          {isEmpty(todoListTasks[editTaskId - 1])
+            ? null
+            : todoListTasks[editTaskId - 1].content}
+        </Paragraph>
+        <TextInput
+          placeholder="Enter new task content here"
+          marginTop={16}
+          value={editTaskInput}
+          onChange={event => setEditTaskInput(event.target.value)}
+        />
+      </Dialog>
     </Pane>
   );
 }
