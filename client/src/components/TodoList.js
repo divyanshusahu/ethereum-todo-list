@@ -66,7 +66,7 @@ function TodoList() {
     const userAccount = await web3.eth.getAccounts();
     setAccount(userAccount[0]);
     const todoListContractAddress =
-      "0x2dCEDbaf916373B0e75A6f3aC7116f28803c17b1"; // Paste your contract address here
+      process.env.REACT_APP_TODOLIST_CONTRACT_ADDRESS; // Paste your contract address here
     let tlc = new web3.eth.Contract(todoListABI.abi, todoListContractAddress);
     setTodoListConnection(tlc);
 
